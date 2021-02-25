@@ -1,0 +1,19 @@
+.vs/slnx.sqlite
+# 忽略编译文件夹
+/Temp/
+/Logs/
+/Library/
+/obj/
+*.code-workspace
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+*.apk
+*.aab
+*.unitypackage
+*.unityproj
+/.vs/
+/*.csproj
+/*.sln
+/*.Editor.csproj
+*.meta
