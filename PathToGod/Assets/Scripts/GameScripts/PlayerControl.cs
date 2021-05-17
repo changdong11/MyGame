@@ -8,7 +8,7 @@ public class PlayerControl : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        transform.position = AssetManager.Instance.PlayerStartPos;
+        //transform.position = AssetManager.Instance.PlayerStartPos;
         isJumping = false;
     }
     bool isMoveLeft;
@@ -22,7 +22,25 @@ public class PlayerControl : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        if (Input.touchCount == 1)
+        {
+            if (Input.touches[0].phase == TouchPhase.Began && isJumping == false)
+            {
+                //EventCenter.Broadcast(EventType.GeneratePlatform);
+                isJumping = true;
+                Vector3 mousePos = Input.mousePosition;
+                if (mousePos.x <= Screen.width / 2)
+                {
+                    isMoveLeft = true;
+                }
+                else
+                {
+                    isMoveLeft = false;
+                }
+                Jump();
+            }
+        }
+        /*
         if (Input.GetMouseButtonDown(1) && isJumping == false)
         {
             EventCenter.Broadcast(EventType.GeneratePlatform);
@@ -42,6 +60,7 @@ public class PlayerControl : MonoBehaviour
         {
             transform.position = AssetManager.Instance.PlayerStartPos;
         }
+        */
     }
     void Jump()
     {
@@ -65,10 +84,10 @@ public class PlayerControl : MonoBehaviour
         {
             isJumping = false;
             currentPos = collision.transform.position;
-            nextLeftPos = new Vector3(currentPos.x - AssetManager.Instance.nextPlatformX, 
-                currentPos.y + AssetManager.Instance.nextPlatformY, 0);
-            nextRightPos = new Vector3(currentPos.x + AssetManager.Instance.nextPlatformX,
-                currentPos.y + AssetManager.Instance.nextPlatformY, 0);
+            //nextLeftPos = new Vector3(currentPos.x - AssetManager.Instance.nextPlatformX, 
+            //    currentPos.y + AssetManager.Instance.nextPlatformY, 0);
+            //nextRightPos = new Vector3(currentPos.x + AssetManager.Instance.nextPlatformX,
+            //    currentPos.y + AssetManager.Instance.nextPlatformY, 0);
         }
         
 

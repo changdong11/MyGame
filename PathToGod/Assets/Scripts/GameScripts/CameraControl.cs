@@ -31,7 +31,6 @@ public class CameraControl : MonoBehaviour
         
         if (player != null)
         {
-            print("更新一次位置");
             Vector3 pos = player.transform.position + offect;
             if (transform.position.y < pos.y)
             {
