@@ -14,6 +14,11 @@ namespace ProjectPratice
         public const string StartLuaEnv = "StartLuaEnv"; //启动lua虚拟机
         public const string LuaDispose = "LuaDispose"; //关闭lua虚拟机
         public const string DoLuaString = "DoLuaString"; //执行lua代码
+
+        public const string InvokeNative = "InvokeNative";//调用原生方法
+        public const string CheckNativeMethod = "CheckNativeMethod";//检查原生方法
+
+        public const string TestScripts = "TestScripts";//测试代码
     }
 }
 

@@ -11,6 +11,7 @@ public class GameFace : Face
             return new List<string>()
                 {
                     MessageName.StartManager,
+                    MessageName.TestScripts,
                 };
         }
     }
@@ -30,6 +31,9 @@ public class GameFace : Face
         {
             case MessageName.StartManager:
                 StartManager();
+                break;
+            case MessageName.TestScripts:
+                Test();
                 break;
             default:
                 break;
@@ -70,6 +74,13 @@ public class GameFace : Face
     {
         base.Init();
         print("app face  init");
+
+    }
+    public void Test()
+    {
+        GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        obj.transform.position = Vector3.zero;
+        obj.AddComponent<TestUse>();
     }
     public void StartUp()
     {
@@ -82,6 +93,7 @@ public class GameFace : Face
         AddManager<LogManager>(ManagerName.LogManager);
         AddManager<AssetBundleManager>(ManagerName.AssetBundleManager);
         AddManager<LuaManager>(ManagerName.LuaManager);
+        AddManager<NativeManager>(ManagerName.NativeManager);
         AddManager<AppManager>(ManagerName.AppManager);
         
         
@@ -141,6 +153,20 @@ public class GameFace : Face
                 luaManager = GetManager<LuaManager>(ManagerName.LuaManager);
             }
             return luaManager;
+        }
+    }
+    #endregion
+    #region nativeManager
+    private NativeManager nativeManager;
+    public NativeManager NativeManager
+    {
+        get
+        {
+            if (nativeManager == null)
+            {
+                nativeManager = GetManager<NativeManager>(ManagerName.NativeManager);
+            }
+            return nativeManager;
         }
     }
     #endregion

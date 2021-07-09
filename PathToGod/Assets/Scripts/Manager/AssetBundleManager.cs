@@ -63,6 +63,7 @@ namespace ProjectPratice
                         action = dynamicList[0] as Action;
                     }
                     LoadABCommon(action);
+                    
                     break;
                 case MessageName.LoadABConfig:
                     dynamicList = notification.Body as DynamicList;
@@ -74,6 +75,7 @@ namespace ProjectPratice
                         action = dynamicList[0] as Action;
                     }
                     LoadABConfig(action);
+                   
                     break;
                 default:
                     break;
@@ -85,8 +87,186 @@ namespace ProjectPratice
             base.Init();
             loadAssetbundleConfig = new Dictionary<string, AssetBundleConfig>();
             loadLuaBundle = new Dictionary<string, AssetBundle>();
+            loadResBundle = new Dictionary<string, AssetBundle>();
+            assetBundleConfig = new AssetBundleConfig();
         }
         private string[] commonAbNames = new string[] { "base_prefab_common" };
+
+        /// <summary>
+        /// 同步加载
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public T Load <T>(string path) where T : UnityEngine.Object
+        {
+
+            if (string.IsNullOrEmpty(path))
+            {
+                return null;
+            }
+            //路径 res  --  base/Prrefabs/Common/Canvas
+            //编辑器下 不从bundle加载
+#if UNITY_EDITOR
+            if (RunPlatform.UNITY_EDITOR() && !BuildPath.EDITOR_LOAD_ASSETBUNDLE)
+            {
+                string editorPath = Application.dataPath + "Res/" + path;
+                if (!File.Exists(editorPath))
+                {
+                    return null;
+                }
+                return UnityEditor.AssetDatabase.LoadAssetAtPath<T>(editorPath);
+            }
+#endif
+            print("同步加载-----");
+            string pathNoExtension = path.Substring(0, path.Length - ( path.Length - path.LastIndexOf(".")));
+            string abName = pathNoExtension.Substring(0, pathNoExtension.Length - (pathNoExtension.Length - pathNoExtension.LastIndexOf("/"))) ;
+            abName = abName.Replace("/", "_").ToLower();
+            string assetName = pathNoExtension.Substring(pathNoExtension.LastIndexOf("/")+1);
+            //首先加载依赖
+            string [] dependencise = assetBundleConfig.res.GetAllDependencies(abName);
+            foreach (var item in dependencise)
+            {
+                AssetBundle itemBundle = null;
+                loadResBundle.TryGetValue(item, out itemBundle);
+                print("查找缓存中是否存在bundle");
+                Debug.Log(itemBundle);
+                if (itemBundle == null)
+                {
+                    //先加载bundle
+                    string bundlePath = BuildPath.Search_Path("Res/" + item);
+                    if (bundlePath.StartsWith("file://"))
+                    {
+                        bundlePath = bundlePath.Replace("file://", "");
+                    }
+                    itemBundle = AssetBundle.LoadFromFile(bundlePath);
+                    loadResBundle.Add(item, itemBundle);
+                    
+                }
+            }
+            AssetBundle bundle = null;
+            loadResBundle.TryGetValue(abName,out bundle);
+            if (bundle == null)
+            {
+                //先加载bundle
+                string bundlePath = BuildPath.Search_Path("Res/" + abName) ;
+                if (bundlePath.StartsWith("file://"))
+                {
+                    bundlePath = bundlePath.Replace("file://", "");
+                }
+                bundle = AssetBundle.LoadFromFile(bundlePath);
+                loadResBundle.Add(abName, bundle);
+            }
+            
+            T obj = bundle.LoadAsset<T>(assetName);
+            print("加载 完成 --" + obj.name);
+            return obj;
+
+        }
+
+        public async void LoadAsync<T>(string path,Action<T> callBack)where T :UnityEngine.Object
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return ;
+            }
+            T obj = null;
+            //路径 res  --  base/Prrefabs/Common/Canvas
+            //编辑器下 不从bundle加载
+#if UNITY_EDITOR
+            if (RunPlatform.UNITY_EDITOR() && !BuildPath.EDITOR_LOAD_ASSETBUNDLE)
+            {
+                string editorPath = Application.dataPath + "Res/" + path;
+                if (File.Exists(editorPath))
+                {
+                    obj = UnityEditor.AssetDatabase.LoadAssetAtPath<T>(editorPath);
+                    callBack?.Invoke(obj);
+                }
+                
+            }
+#endif
+            string pathNoExtension = path.Substring(0, path.Length - (path.Length - path.LastIndexOf(".")));
+            string abName = pathNoExtension.Substring(0, pathNoExtension.Length - (pathNoExtension.Length - pathNoExtension.LastIndexOf("/")));
+            abName = abName.Replace("/", "_").ToLower();
+            string assetName = pathNoExtension.Substring(pathNoExtension.LastIndexOf("/") + 1);
+
+            //首先加载依赖
+            string[] dependencise = assetBundleConfig.res.GetAllDependencies(abName);
+            foreach (var item in dependencise)
+            {
+                AssetBundle itemBundle = null;
+                loadResBundle.TryGetValue(item, out itemBundle);
+                if (itemBundle == null)
+                {
+                    //先加载依赖bundle
+                    string bundlePath = BuildPath.Search_Path("Res/" + item);
+                    print("加载依赖=----");
+                    var luaTaskReturn = await LoadAssetbundleAsync(bundlePath);
+                    if (luaTaskReturn != null)
+                    {
+                        switch (luaTaskReturn.state)
+                        {
+                            case TaskState.Sucess:
+                                itemBundle = luaTaskReturn.TaskReturnObj as AssetBundle;
+                                if (itemBundle != null)
+                                {
+                                    loadResBundle.Add(item, itemBundle);
+                                }
+                                print("加载依赖bundle=----"+ itemBundle);
+                                break;
+                            case TaskState.Fail:
+                                ProjectUnity.Debug.LogPE($"Assetbundle 加载错误：{luaTaskReturn.TaskReturnObj}");
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+            }
+            //加载bundle
+            AssetBundle abBundle = null;
+            loadResBundle.TryGetValue(abName, out abBundle);
+            if (abBundle == null)
+            {
+                string bundlePath = BuildPath.Search_Path("Res/" + abName);
+                var luaTaskReturn = await LoadAssetbundleAsync(bundlePath);
+                if (luaTaskReturn != null)
+                {
+                    switch (luaTaskReturn.state)
+                    {
+                        case TaskState.Sucess:
+                            abBundle = luaTaskReturn.TaskReturnObj as AssetBundle;
+                            if (abBundle != null)
+                            {
+                                loadResBundle.Add(abName, abBundle);
+                                obj = abBundle.LoadAsset<T>(assetName);
+                                print("缓存中没有bundle  ---" + obj.name);
+                            }
+                           
+                                
+                            break;
+                        case TaskState.Fail:
+                            ProjectUnity.Debug.LogPE($"Assetbundle 加载错误：{luaTaskReturn.TaskReturnObj}");
+                           
+                            break;
+                        default:
+                            
+                            break;
+                    }
+                }
+                
+            }
+            else
+            {
+                obj = abBundle.LoadAsset<T>(assetName);
+                print("缓存中有bundle  ---" + abBundle);
+                print("缓存中有bundle  ---" + obj.name);
+            }
+            print("异步加载 ---" + obj.name);
+            callBack?.Invoke(obj);
+        }
+
+
         protected async void LoadABCommon(Action callBack = null)
         {
             ProjectUnity.Debug.LogColor("开始加载common res", Color.red);
@@ -103,10 +283,10 @@ namespace ProjectPratice
                         case TaskState.Sucess:
                             AssetBundle bundle = luaTaskReturn.TaskReturnObj as AssetBundle;
                             if (bundle != null)
-                                loadLuaBundle.Add(item, bundle);
-                            print(bundle.name);
-                                UnityEngine.Object obj = bundle.LoadAsset<UnityEngine.Object>("Canvas");
-                                GameObject.Instantiate(obj);
+                                loadResBundle.Add(item, bundle);
+                                print(bundle.name);
+                                //UnityEngine.Object obj = bundle.LoadAsset<UnityEngine.Object>("Canvas");
+                                //GameObject.Instantiate(obj);
                             break;
                         case TaskState.Fail:
                             ProjectUnity.Debug.LogPE($"Assetbundle 加载错误：{luaTaskReturn.TaskReturnObj}");
@@ -118,7 +298,6 @@ namespace ProjectPratice
                 ProjectUnity.Debug.LogColor("加载common res  完成", Color.red);
             }
             callBack?.Invoke();
-
         }
 
         protected async void LoadABConfig(Action callBack = null)
@@ -127,10 +306,11 @@ namespace ProjectPratice
             ProjectUnity.Debug.LogColor("加载config  完成", Color.red);
             callBack ?.Invoke();
             ProjectUnity.Debug.LogColor("加载config  回调 执行 完成", Color.red);
-
         }
         private Dictionary<string, AssetBundleConfig> loadAssetbundleConfig;
+        AssetBundleConfig assetBundleConfig;
         private Dictionary<string, AssetBundle> loadLuaBundle;
+        private Dictionary<string, AssetBundle> loadResBundle;
         protected async Task LoadABConfig(string configName)
         {
             string configPath = "config/" + configName + ".json";
@@ -148,6 +328,7 @@ namespace ProjectPratice
                         if (!string.IsNullOrEmpty(content))
                             config = JsonUtility.FromJson<AssetBundleConfig>(content);
                             loadAssetbundleConfig.Add(configName, config);
+                            assetBundleConfig = config;
                         break;
                     case TaskState.Fail:
                         ProjectUnity.Debug.LogPE($"Config 加载错误 ：{taskReturn.TaskReturnObj}");
@@ -161,7 +342,7 @@ namespace ProjectPratice
             {
                 var luaPath = "lua/" + item.Name;
                 var luaBundlepath = BuildPath.Search_Path(luaPath);
-                //ProjectUnity.Debug.LogColor("加载 lua bundle 路径---" + luaPath, Color.red);
+                ProjectUnity.Debug.LogColor("加载 lua bundle 路径---" + luaPath, Color.red);
                 var luaTaskReturn = await LoadAssetbundleAsync(luaBundlepath);
                 if (luaTaskReturn!= null)
                 {

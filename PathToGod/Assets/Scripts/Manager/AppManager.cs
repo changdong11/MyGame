@@ -125,9 +125,24 @@ namespace ProjectPratice
         }
         protected void LoadConfigCallback()
         {
+            
+            UnityEngine.Object obj = GameFace.instance.AssetBundleManager.Load<UnityEngine.Object>("Base/Prefab/Common/Canvas02.prefab");
+            GameObject.Instantiate<UnityEngine.Object>(obj);
+            GameFace.instance.AssetBundleManager.LoadAsync<UnityEngine.Object>(
+                "Base/Prefab/Common/Canvas03.prefab",
+                obj02 =>
+                {
+                    print(obj02.name + "异步加载完成---");
+                    GameObject.Instantiate<UnityEngine.Object>(obj02);
+                }
+                );
             ProjectUnity.Debug.LogColor("发送 启动lua虚拟机 执行lua 代码 消息", Color.red);
             //启动lua虚拟机  执行lua代码
             SendNotification(MessageName.StartLuaEnv);
+        }
+        protected void Call(UnityEngine.Object obj)
+        {
+
         }
         public override void Dispose()
         {

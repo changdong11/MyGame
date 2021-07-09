@@ -42,6 +42,8 @@ public class AssetBundleTools
     }
     public static void BuildLua(BuildTarget target)
     {
+        AssetDatabase.RemoveUnusedAssetBundleNames();
+        AssetDatabase.Refresh();
         string luaPatn = BuildPath.FormatToUnityPath(BuildPath.Project_Data_Floder + "/"+ BuildPath.Lua_Scripts_Floder);
         string luaTempPath = BuildPath.FormatToUnityPath(BuildPath.Project_Data_Floder + "/" + BuildPath.Lua_temp_Floder);
         if (!Directory.Exists(luaPatn))
@@ -83,8 +85,6 @@ public class AssetBundleTools
             importer.assetBundleName = itemPath;
         }
         AssetDatabase.Refresh();
-        AssetDatabase.RemoveUnusedAssetBundleNames();
-        AssetDatabase.Refresh();
         BuildAssetBundleOptions options = BuildAssetBundleOptions.DeterministicAssetBundle
                                             | BuildAssetBundleOptions.UncompressedAssetBundle;
         string outPath = outBundlePath + "/lua";
@@ -100,6 +100,7 @@ public class AssetBundleTools
     }
     public static void BuildRes(BuildTarget target)
     {
+        AssetDatabase.RemoveUnusedAssetBundleNames();
         string resPath = BuildPath.Project_Data_Floder +"/"+ BuildPath.Res_Floder;
         //文件夹打标记
         string[] tempDirs = Directory.GetDirectories(resPath, "*.*", SearchOption.AllDirectories);
@@ -122,6 +123,8 @@ public class AssetBundleTools
             Directory.CreateDirectory(outPath);
         }
         BuildPipeline.BuildAssetBundles(outPath, options, target);
+        
+        AssetDatabase.Refresh();
         AssetDatabase.RemoveUnusedAssetBundleNames();
         AssetDatabase.Refresh();
     }
@@ -201,10 +204,11 @@ public class AssetBundleTools
         }
         resItem.Item = resList;
         config.res = resItem;
-        if (!Directory.Exists(outConfigPath))
+        if (Directory.Exists(outConfigPath))
         {
-            Directory.CreateDirectory(outConfigPath);
+            Directory.Delete(outConfigPath,true);
         }
+        Directory.CreateDirectory(outConfigPath);
         //for (int i = 0; i < config.res.Item.Count-1; i++)
         //{
         //    Debug.LogError(config.res.Item[i].Name);

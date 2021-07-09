@@ -28,7 +28,7 @@ public class LuaAssetBundleItem
         string [] des = null;
         if (Item != null)
         {
-            var abitem = Item.Find(ab => ab.Path.Equals(assetBundleName));
+            var abitem = Item.Find(ab => ab.Name.Equals(assetBundleName));
             if (abitem != null && abitem.Dependencies != null)
             {
                 des = abitem.Dependencies.ToArray();
@@ -51,11 +51,18 @@ public class ResAssetBundleItem
     public string[] GetAllDependencies(string assetBundleName)
     {
         string[] des = null;
+        UnityEngine.Debug.Log("11111");
         if (Item != null)
         {
-            var abitem = Item.Find(ab => ab.Path.Equals(assetBundleName));
+            UnityEngine.Debug.Log("22222");
+            foreach (var item in Item)
+            {
+                UnityEngine.Debug.Log("依赖---"+item.Path);
+            }
+            var abitem = Item.Find(ab => ab.Name.Equals(assetBundleName));
             if (abitem != null && abitem.Dependencies != null)
             {
+                UnityEngine.Debug.Log("333333");
                 des = abitem.Dependencies.ToArray();
             }
         }
